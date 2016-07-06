@@ -1,6 +1,6 @@
 # Scrape a user from HackerRank
 
-pollTime = 5
+pollTime = 0.5
 
 def setPollTime(time):
 	'''
@@ -58,16 +58,7 @@ def scrape(sess,username):
 		dictionary = dict()
 
 		for uname in username:
-			sess.visit('https://www.hackerrank.com/' + uname+'/')
-
-			lastSeen = None
-			while lastSeen == None:
-				sleep(pollTime)
-				sessBody = sess.body()
-				if(sessBody != None):
-					renderer=BeautifulSoup(sessBody,"lxml")
-					lastSeen = renderer.find('span','time-ago')
-			dictionary[uname]=lastSeen.getText()
+			dictionary[uname]=scrape(sess,uname)
 
 		return dictionary		
 	else:
