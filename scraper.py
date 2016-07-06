@@ -57,6 +57,9 @@ def completeScrape(sess,username,debug=False):
 		q = sess.at_xpath('//*[@data-analytics="ProfileChallengesLoadMore"]')
 	
 	findCompletedChallenges(sessBody)
+	from bs4 import BeautifulSoup
+	renderer = BeautifulSoup(sessBody)
+	user.setLastSeen(renderer.find('span','time-ago').getText())
 	return user
 
 def findCompletedChallenges(markup):
@@ -69,7 +72,7 @@ def findCompletedChallenges(markup):
 	renderer = renderer.find(id ='profile-tab-challenges')
 	renderer = renderer.find_all('a','prob_link')
 	for i in renderer:
-		print i.getText(), 'https://www.hackerrank.com/' + i['href']
+		print str(i.getText().encode('ascii','ignore'))+'\t'+'https://www.hackerrank.com' + str(i['href'])
 	#print renderer
 
 def scrape(sess,username):
