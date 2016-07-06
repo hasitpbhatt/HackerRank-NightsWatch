@@ -3,5 +3,5 @@
 To keep a watch on selected HackerRank users
 
 Dependencies: 
-	- Python
-	- dryscrape
+- Python
+- dryscrape
