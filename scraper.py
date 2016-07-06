@@ -1,6 +1,7 @@
 # Scrape a user from HackerRank
 
-pollTime = 0.5
+# gap to load the HackerRank page completely
+pollTime = 2
 
 def setPollTime(time):
 	'''
@@ -33,6 +34,44 @@ def getSession():
 
 	return sess	
 
+def completeScrape(sess,username,debug=False):
+	'''
+	Scrapes everything, all the challenges user has completed
+	'''
+	user = scrape(sess,username)
+	q = sess.at_xpath('//*[@data-analytics="ProfileChallengesLoadMore"]')
+	last = sess.body()
+	cnt = 0
+	import time
+	while(q != None):
+		q.click()
+		if(debug):
+			print "LoadMore clicked"
+			sess.render(str(cnt)+'.jpg')
+			cnt += 1
+		time.sleep(pollTime)
+		sessBody = sess.body()
+		if(last == sessBody):
+			break
+		last = sessBody
+		q = sess.at_xpath('//*[@data-analytics="ProfileChallengesLoadMore"]')
+	
+	findCompletedChallenges(sessBody)
+	return user
+
+def findCompletedChallenges(markup):
+	try:
+		from bs4 import BeautifulSoup
+	except:
+		raise Exception('BeautifulSoup not found')
+
+	renderer = BeautifulSoup(markup)
+	renderer = renderer.find(id ='profile-tab-challenges')
+	renderer = renderer.find_all('a','prob_link')
+	for i in renderer:
+		print i.getText(), 'https://www.hackerrank.com/' + i['href']
+	#print renderer
+
 def scrape(sess,username):
 	'''
 	Scrapes details related to given username
@@ -48,6 +87,7 @@ def scrape(sess,username):
 
 	flag = False
 
+	# If list of users, call it one by one
 	if type(username) == type([]):
 		flag = True
 
@@ -62,6 +102,8 @@ def scrape(sess,username):
 
 		return dictionary		
 	else:
+		import user
+		myUser = user.User(username)
 		sess.visit('https://www.hackerrank.com/' + username+'/')
 
 		sessionBody = sess.body()
@@ -70,15 +112,36 @@ def scrape(sess,username):
 
 		lastSeen = None
 		while lastSeen == None:
+			sleep(pollTime)
 			sessBody = sess.body()
 			if(sessBody != None):
 				renderer=BeautifulSoup(sessBody,"lxml")
 				lastSeen = renderer.find('span','time-ago')
-			sleep(pollTime)
+
 		#print 'username'+'\t'+'Last Successful submission'
 		#print username+'\t'+lastSeen
+		myUser.setLastSeen(lastSeen.getText())
+		
+		z = renderer.find(id='hacker-contest-score')
+		if(z != None):
+			myUser.setContestScore(z.getText())
+		
+		z = renderer.find(id='hacker-archive-score')
+		if(z != None):
+			myUser.setArchiveScore(z.getText())
 
-		return lastSeen.getText()
+		z = renderer.find(id='hacker-percentile')
+		if(z != None):
+			myUser.setPercentile(z.getText())
+
+		z = renderer.find(id='hacker-competitions')
+		if(z != None):
+			myUser.setCompetitions(z.getText())
+
+		# If you want to see completed questions, too
+		#findCompletedChallenges(sessBody)
+
+		return myUser
 
 def main():
 	scrape('hasitpbhatt')
